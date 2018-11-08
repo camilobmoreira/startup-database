@@ -3,8 +3,20 @@ package br.gov.sp.fatec.startupdatabase.service;
 import br.gov.sp.fatec.startupdatabase.model.Fundador;
 import br.gov.sp.fatec.startupdatabase.model.Startup;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.platform.suite.api.ExcludeTags;
+import org.junit.runner.RunWith;
 
+import java.util.List;
+import java.util.stream.Stream;
 
+//@RunWith(JUnitPlatform.class)
+//@ExcludeTags("fail") //fixme não tá funcionando
 public class StartupServiceTest {
 
     StartupService startupService = new StartupService();
@@ -30,8 +42,8 @@ public class StartupServiceTest {
 
     @Test
     public void assertThrows() {
-        Assertions.assertThrows(NumberFormatException.class, () -> {
-            this.startupService.criaStartup("Aisdba", "asd", "qrqsadq", "23523");
+        Assertions.assertThrows(RuntimeException.class, () -> {
+            this.startupService.criaStartup("Aisdba", "12345678912", "qrqsadq", "23523");
         });
     }
 
@@ -60,11 +72,49 @@ public class StartupServiceTest {
     }
 
     @Test
-    @Tag("Arrumar - fail")
+    @Tag("fail")
     public void fail() {
         Startup startup1 = this.startupService.criaStartup("asd", "23423", "qrqsadq", "23523");
-        Startup startup2 = this.startupService.buscaPorNomeFundador("asd");
+        List<Startup> startups = this.startupService.buscaPorNomeFundador("asd");
         Assertions.fail();
-        Assertions.assertEquals(startup1, startup2);
+        Assertions.assertNotNull(startups);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"123456789", "987654321", "465132789"})
+    public void parametezidedTestValueSource(String cpf) {
+        Startup startup1 = this.startupService.criaStartup("Jose", cpf, "nome aleatorio SA", "897541384");
+        Assertions.assertEquals(startup1, this.startupService.buscarPorCpfFundador(cpf));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "1000, 2000, 3000",
+            "2500, 3000, 5500"
+    })
+    public void parametizedTestCsvSource(Double a, Double b, Double c) {
+        this.startup.addFundos(a);
+        this.startup.addFundos(b);
+        Assertions.assertEquals(c, this.startup.getCapital());
+    }
+
+    @ParameterizedTest
+    @MethodSource("fundosProvider")
+    public void parametizedTestMethodSource(Double a, Double b, Double c) {
+        this.startup.addFundos(a);
+        this.startup.addFundos(b);
+        Assertions.assertEquals(c, this.startup.getCapital());
+    }
+
+    private static Stream<Arguments> fundosProvider() {
+        return Stream.of(
+                Arguments.of(1000.0, 2000.0, 3000.0),
+                Arguments.of(2500.0, 3000.0, 5500.0)
+        );
+    }
+
+    @RepeatedTest(5)
+    public void repeatedTest() {
+        Assertions.assertEquals(1, this.startupService.buscaPorNomeFundador("Kellycrusha").size());
     }
 }
